@@ -7,7 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 
-@Entity
+@Entity(name = "ClientUser")
 @Table(name = "tb_user")
 public class User implements Serializable {
 
