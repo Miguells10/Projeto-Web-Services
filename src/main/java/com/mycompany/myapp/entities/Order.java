@@ -1,5 +1,6 @@
 package com.mycompany.myapp.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
@@ -24,7 +25,7 @@ public class Order implements Serializable {
     @JoinColumn(name = "client_id")
     private User client;
 
-    @OneToMany(mappedBy = "id.order")
+    @OneToMany(mappedBy = "id.order", fetch = FetchType.EAGER)
     private Set<OrderItem> items = new HashSet<>();
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
@@ -63,6 +64,7 @@ public class Order implements Serializable {
         if (orderStatus != null) this.orderStatus = orderStatus.ordinal();
     }
 
+    @JsonIgnore
     public User getClient() {
         return client;
     }

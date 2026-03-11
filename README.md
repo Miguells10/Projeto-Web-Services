@@ -1,236 +1,75 @@
-# projetoWebServices
+# Projeto Web Services com Spring Boot e React (JHipster)
 
-This application was generated using JHipster 8.11.0, you can find documentation and help at [https://www.jhipster.tech/documentation-archive/v8.11.0](https://www.jhipster.tech/documentation-archive/v8.11.0).
+![Visão Geral do Dashboard](src/main/resources/static/loja.html) _(Acesse o dashboard rodando o projeto)_
 
-## Project Structure
+Este projeto é um sistema completo de backend para um e-commerce ou sistema de gestão, complementado com um dashboard de interfaces ricas (frontend). A API foi implementada seguindo rigorosamente os padrões RESTful, utilizando **Java 21** com o ecossistema do **Spring Boot 3**.
 
-Node is required for generation and recommended for development. `package.json` is always generated for a better development experience with prettier, commit hooks, scripts and so on.
+A infraestrutura e o scaffolding inicial utilizaram o **JHipster** (com React e security via JWT pré-configurados), mas toda a camada de domínio, repositórios, serviços e controladores do curso foram implementadas do zero.
 
-In the project root, JHipster generates configuration files for tools like git, prettier, eslint, husky, and others that are well known and you can find references in the web.
+---
 
-`/src/*` structure follows default Java structure.
+## 🎯 Objetivo e Contexto
 
-- `.yo-rc.json` - Yeoman configuration file
-  JHipster configuration is stored in this file at `generator-jhipster` key. You may find `generator-jhipster-*` for specific blueprints configuration.
-- `.yo-resolve` (optional) - Yeoman conflict resolver
-  Allows to use a specific action when conflicts are found skipping prompts for files that matches a pattern. Each line should match `[pattern] [action]` with pattern been a [Minimatch](https://github.com/isaacs/minimatch#minimatch) pattern and action been one of skip (default if omitted) or force. Lines starting with `#` are considered comments and are ignored.
-- `.jhipster/*.json` - JHipster entity configuration files
+O objetivo principal deste projeto foi aprofundar conhecimentos práticos na criação de APIs REST corporativas, modelagem de dados complexos com e uso do Hibernate/JPA para mapeamento objeto-relacional estruturado sob um banco de dados real **PostgreSQL**.
 
-- `npmw` - wrapper to use locally installed npm.
-  JHipster installs Node and npm locally using the build tool by default. This wrapper makes sure npm is installed locally and uses it avoiding some differences different versions can cause. By using `./npmw` instead of the traditional `npm` you can configure a Node-less environment to develop or test your application.
-- `/src/main/docker` - Docker configurations for the application and services that the application depends on
+Foi dada atenção especial ao tratamento de exceções global e à separação em camadas lógicas, mantendo o código limpo, testável e manutenível.
 
-## Development
+---
 
-The build system will install automatically the recommended version of Node and npm.
+## 💻 Tecnologias e Clean Architecture
 
-We provide a wrapper to launch npm.
-You will only need to run this command when dependencies change in [package.json](package.json).
+- **Java 21 e Spring Boot 3**: Para a criação da API de forma veloz e moderna.
+- **Spring Data JPA & Hibernate**: Implementação do Repository Pattern e ORM robusto sem Boilerplates de SQL.
+- **PostgreSQL**: Banco de dados relacional em produção.
+- **JHipster Framework**: Utilizado para provisionamento rápido da arquitetura base (Segurança JWT, rotas front-end, profiles de teste/dev).
+- **React & Reactstrap**: Componentes React do JHipster acrescidos de um Dashboard personalizado criado do zero em HTML/CSS/JS (Vanilla com Glassmorphism) que demonstra consumo de APIs assíncronas assíncronas via `fetch`.
+- **Lombok**: Redução da verbosidade do Java (Getters, Setters, Construtores).
 
-```
-./npmw install
-```
+### Arquitetura em Camadas
 
-We use npm scripts and [Webpack][] as our build system.
+A aplicação foi desenvolvida respeitando a forte coesão e baixo acoplamento:
 
-Run the following commands in two separate terminals to create a blissful development experience where your browser
-auto-refreshes when files change on your hard drive.
+1.  **Resource Layer (Web)**: REST Controllers responsáveis por receber as requisições, retornar os DTOs (Data Transfer Objects) corretos e definir códigos HTTP semânticos (200, 201, 204, 404, etc).
+2.  **Service Layer**: Alojamento detalhado de toda a regra de negócio. Mantém a camada web e de dados agnósticas umas às outras e injeta as dependências de acesso ao banco (`@Service`, `@Transactional`).
+3.  **Repository Layer**: Interfaces do Spring Data JPA (`JpaRepository`) provendo abstrações das consultas SQL diretas.
+4.  **Domain (Entity) Layer**: Entidades do JPA ricas em mapeamentos (`@OneToMany`, `@ManyToOne`, `@ManyToMany`, e herança de tabelas, se necessário). Contém a lógica de mapeamento bidirecional controlada contra ciclos via `@JsonIgnore`.
 
-```
-./gradlew -x webapp
-./npmw start
-```
+---
 
-Npm is also used to manage CSS and JavaScript dependencies used in this application. You can upgrade dependencies by
-specifying a newer version in [package.json](package.json). You can also run `./npmw update` and `./npmw install` to manage dependencies.
-Add the `help` flag on any command to see how you can use it. For example, `./npmw help update`.
+## 🚀 Principais Desafios Superados (Highlights para Currículo)
 
-The `./npmw run` command will list all the scripts available to run for this project.
+1.  **Análise e Resolução de Infinite Recursion (JSON)**:
+    Sistemas corporativos sofrem constantemente com serializações JSON em grafo cíclico no JPA. Nesse projeto, identifiquei e tratei o problema manipulando estrategicamente o fluxo com `@JsonIgnore` entre `Order -> OrderItem -> Product` e `User -> Order`. Além de gerenciar Lazy Loading da Session do Hibernate encapsulando de forma segura as leituras do Entity Manager usando `@Transactional(readOnly = true)`.
 
-### PWA Support
+2.  **Convivência Pacífica com Legacy/Scaffolds (JHipster)**:
+    Para manter dois provedores de "User" (o scaffolded do JHipster e a minha implementação Customizada), fiz injeções com Qualifier por nomes (`@Service("userEntityService")`) e namespaces de banco (`@Entity(name = "ClientUser")`), provando meu conhecimento aprofundado do ciclo de vida dos Beans do Spring Context (`ApplicationContext`) e resolução de conflitos em injeção de dependência em codebases que herdam sistemas monolíticos engessados.
 
-JHipster ships with PWA (Progressive Web App) support, and it's turned off by default. One of the main components of a PWA is a service worker.
+3.  **Tratamento Global de Exceções**:
+    Para não "sujar" os REST Controllers com centenas de blocos `try-catch`, projetei um controlador central central das respostas HTTP, o `ResourceExceptionHandler` via `@ControllerAdvice`. Retornando payloads JSON elegantes e padrão com carimbo de tempo (`Timestamp`), status (`404 Not Found`, etc), a requisição que falhou e o detalhe do erro (`StandardError`).
+4.  **Desenho Robusto de Banco em Perfil de Teste (Seeding)**:
+    Configuração e separação em pacotes de Teste e Configurações (`TestConfig`). Usei _dependency injection_ junto com o comando `CommandLineRunner` para popular relacionalmente todo o banco de dados (Categorias, Clientes, Produtos relacionados às suas Categorias, Pedidos com data `Instant` ISO-8601 e status Enum, e Pagamentos associados na relação forte "One-to-One" compartilhando chaves) todas as vezes em que o ambiente de dev (`DEV profile`) entra no ar.
 
-The service worker initialization code is commented out by default. To enable it, uncomment the following code in `src/main/webapp/index.html`:
+---
 
-```html
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./service-worker.js').then(function () {
-      console.log('Service Worker Registered');
-    });
-  }
-</script>
-```
+## 🔧 Como Executar Localmente
 
-Note: [Workbox](https://developers.google.com/web/tools/workbox/) powers JHipster's service worker. It dynamically generates the `service-worker.js` file.
+1. **Pré-requisitos**:
 
-### Managing dependencies
+   - Java 21+ instalado.
+   - Banco de dados PostgreSQL rodando na porta `5432` com usuário/senha compatíveis ou edite o arquivo `.env`.
 
-For example, to add [Leaflet][] library as a runtime dependency of your application, you would run following command:
+2. **Subindo o Back-End**:
+   Abra o Terminal na raiz do projeto e execute:
 
-```
-./npmw install --save --save-exact leaflet
-```
+   ```powershell
+   # Popula o env, limpa a build e sobe o Spring no profile application-dev.yml
+   .\run.ps1
+   ```
 
-To benefit from TypeScript type definitions from [DefinitelyTyped][] repository in development, you would run following command:
+3. **Acessando no Navegador**:
+   A API e o frontend React (incluindo o Reactstrap original) estarão disponíveis em `http://localhost:8080/`.
+   - **Para avaliar meu Dashboard Customizado de gestão consumindo a REST**: Acesse direto em **[http://localhost:8080/loja.html](http://localhost:8080/loja.html)** e explore as telas interativas simulando um Admin nativo.
 
-```
-./npmw install --save-dev --save-exact @types/leaflet
-```
+---
 
-Then you would import the JS and CSS files specified in library's installation instructions so that [Webpack][] knows about them:
-Note: There are still a few other things remaining to do for Leaflet that we won't detail here.
-
-For further instructions on how to develop with JHipster, have a look at [Using JHipster in development][].
-
-## Building for production
-
-### Packaging as jar
-
-To build the final jar and optimize the projetoWebServices application for production, run:
-
-```
-./gradlew -Pprod clean bootJar
-```
-
-This will concatenate and minify the client CSS and JavaScript files. It will also modify `index.html` so it references these new files.
-To ensure everything worked, run:
-
-```
-java -jar build/libs/*.jar
-```
-
-Then navigate to [http://localhost:8080](http://localhost:8080) in your browser.
-
-Refer to [Using JHipster in production][] for more details.
-
-### Packaging as war
-
-To package your application as a war in order to deploy it to an application server, run:
-
-```
-./gradlew -Pprod -Pwar clean bootWar
-```
-
-### JHipster Control Center
-
-JHipster Control Center can help you manage and control your application(s). You can start a local control center server (accessible on http://localhost:7419) with:
-
-```
-docker compose -f src/main/docker/jhipster-control-center.yml up
-```
-
-## Testing
-
-### Spring Boot tests
-
-To launch your application's tests, run:
-
-```
-./gradlew test integrationTest jacocoTestReport
-```
-
-### Client tests
-
-Unit tests are run by [Jest][]. They're located near components and can be run with:
-
-```
-./npmw test
-```
-
-## Others
-
-### Code quality using Sonar
-
-Sonar is used to analyse code quality. You can start a local Sonar server (accessible on http://localhost:9001) with:
-
-```
-docker compose -f src/main/docker/sonar.yml up -d
-```
-
-Note: we have turned off forced authentication redirect for UI in [src/main/docker/sonar.yml](src/main/docker/sonar.yml) for out of the box experience while trying out SonarQube, for real use cases turn it back on.
-
-You can run a Sonar analysis with using the [sonar-scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner) or by using the gradle plugin.
-
-Then, run a Sonar analysis:
-
-```
-./gradlew -Pprod clean check jacocoTestReport sonarqube -Dsonar.login=admin -Dsonar.password=admin
-```
-
-Additionally, Instead of passing `sonar.password` and `sonar.login` as CLI arguments, these parameters can be configured from [sonar-project.properties](sonar-project.properties) as shown below:
-
-```
-sonar.login=admin
-sonar.password=admin
-```
-
-For more information, refer to the [Code quality page][].
-
-### Docker Compose support
-
-JHipster generates a number of Docker Compose configuration files in the [src/main/docker/](src/main/docker/) folder to launch required third party services.
-
-For example, to start required services in Docker containers, run:
-
-```
-docker compose -f src/main/docker/services.yml up -d
-```
-
-To stop and remove the containers, run:
-
-```
-docker compose -f src/main/docker/services.yml down
-```
-
-[Spring Docker Compose Integration](https://docs.spring.io/spring-boot/reference/features/dev-services.html) is enabled by default. It's possible to disable it in application.yml:
-
-```yaml
-spring:
-  ...
-  docker:
-    compose:
-      enabled: false
-```
-
-You can also fully dockerize your application and all the services that it depends on.
-To achieve this, first build a Docker image of your app by running:
-
-```sh
-npm run java:docker
-```
-
-Or build a arm64 Docker image when using an arm64 processor os like MacOS with M1 processor family running:
-
-```sh
-npm run java:docker:arm64
-```
-
-Then run:
-
-```sh
-docker compose -f src/main/docker/app.yml up -d
-```
-
-For more information refer to [Using Docker and Docker-Compose][], this page also contains information on the Docker Compose sub-generator (`jhipster docker-compose`), which is able to generate Docker configurations for one or several JHipster applications.
-
-## Continuous Integration (optional)
-
-To configure CI for your project, run the ci-cd sub-generator (`jhipster ci-cd`), this will let you generate configuration files for a number of Continuous Integration systems. Consult the [Setting up Continuous Integration][] page for more information.
-
-[JHipster Homepage and latest documentation]: https://www.jhipster.tech
-[JHipster 8.11.0 archive]: https://www.jhipster.tech/documentation-archive/v8.11.0
-[Using JHipster in development]: https://www.jhipster.tech/documentation-archive/v8.11.0/development/
-[Using Docker and Docker-Compose]: https://www.jhipster.tech/documentation-archive/v8.11.0/docker-compose
-[Using JHipster in production]: https://www.jhipster.tech/documentation-archive/v8.11.0/production/
-[Running tests page]: https://www.jhipster.tech/documentation-archive/v8.11.0/running-tests/
-[Code quality page]: https://www.jhipster.tech/documentation-archive/v8.11.0/code-quality/
-[Setting up Continuous Integration]: https://www.jhipster.tech/documentation-archive/v8.11.0/setting-up-ci/
-[Node.js]: https://nodejs.org/
-[NPM]: https://www.npmjs.com/
-[Webpack]: https://webpack.github.io/
-[BrowserSync]: https://www.browsersync.io/
-[Jest]: https://jestjs.io
-[Leaflet]: https://leafletjs.com/
-[DefinitelyTyped]: https://definitelytyped.org/
+_Aprecie este reposto, ele reflete minha evolução constante em modelagem de backend e engenharia de software com a Stack Spring._
